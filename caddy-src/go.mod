@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/caddyserver/caddy/v2 v2.8.4
-	github.com/greenpau/caddy-security v1.1.29
+	github.com/caddy-dns/rfc2136/ v1.0.1
 )
 
 require (
