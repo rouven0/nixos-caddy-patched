@@ -32,36 +32,52 @@
     {
 
       # Provide some binary packages for selected system types.
-      packages = forAllSystems (
-        system:
-        let
-          pkgs = nixpkgsFor.${system};
-        in
-        {
+      packages = forAllSystems
+        (
+          system:
+          let
+            version = "2.10.0";
 
-          caddy = pkgs.buildGoModule {
-            pname = "caddy";
-            inherit version;
-            src = ./caddy-src;
-            runVend = true;
-            vendorHash = "sha256-umakzDzEOX/wBfV6DEB62g4DffIzyCw4u0QnLH08SdU=";
-            # vendorHash = pkgs.lib.fakeHash;
-
-            meta = {
-              homepage = "https://caddyserver.com";
-              description = "Fast and extensible multi-platform HTTP/1-2-3 web server with automatic HTTPS";
-              license = pkgs.lib.licenses.asl20;
-              mainProgram = "caddy";
-              maintainers = with pkgs.lib.maintainers; [
-                Br1ght0ne
-                emilylange
-                techknowlogick
-              ];
+            pkgs = nixpkgsFor.${system};
+            dist = pkgs.fetchFromGitHub {
+              owner = "caddyserver";
+              repo = "dist";
+              tag = "v${version}";
+              hash = "sha256-us1TnszA/10OMVSDsNvzRb6mcM4eMR3pQ5EF4ggA958=";
             };
-          };
-          default = self.packages.${system}.caddy;
-        }
-      );
+          in
+          {
+
+            caddy = pkgs.buildGoModule {
+              pname = "caddy";
+              inherit version;
+              src = ./caddy-src;
+              runVend = true;
+              vendorHash = "sha256-umakzDzEOX/wBfV6DEB62g4DffIzyCw4u0QnLH08SdU=";
+              # vendorHash = pkgs.lib.fakeHash;
+              postInstall = ''
+                install -Dm644 ${dist}/init/caddy.service ${dist}/init/caddy-api.service -t $out/lib/systemd/system
+
+                substituteInPlace $out/lib/systemd/system/caddy.service \
+                  --replace-fail "/usr/bin/caddy" "$out/bin/caddy"
+                substituteInPlace $out/lib/systemd/system/caddy-api.service \
+                  --replace-fail "/usr/bin/caddy" "$out/bin/caddy"
+              '';
+              meta = {
+                homepage = "https://caddyserver.com";
+                description = "Fast and extensible multi-platform HTTP/1-2-3 web server with automatic HTTPS";
+                license = pkgs.lib.licenses.asl20;
+                mainProgram = "caddy";
+                maintainers = with pkgs.lib.maintainers; [
+                  Br1ght0ne
+                  emilylange
+                  techknowlogick
+                ];
+              };
+            };
+            default = self.packages.${system}.caddy;
+          }
+        );
 
       devShells = forAllSystems (
         system:
